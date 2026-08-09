@@ -231,6 +231,23 @@
   .hidden{display:none !important;}
   .top-actions{display:flex;justify-content:flex-end;margin-bottom:6px;}
 
+  .backup-bar{
+    margin-top:28px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .backup-bar .icon-btn{
+    border:1px solid var(--line-strong);
+    font-size:12px;
+  }
+
   @media (max-width: 600px){
     .wrap{padding:18px 14px 90px;}
     h1{font-size:26px;}
@@ -317,6 +334,11 @@
     <p>No pieces catalogued yet</p>
     <p>Tap "+ Add piece" to log your first drawer.</p>
   </div>
+
+  <div class="backup-bar">
+    <span id="syncStatus">Backup: checking...</span>
+    <button class="icon-btn" id="restoreBtn">Restore from Google Sheet backup</button>
+  </div>
 </div>
 
 <script>
@@ -353,9 +375,14 @@ const COLOR_SWATCH = {
   'trans clear':'#DDEAF2', clear:'#DDEAF2', 'lego yellow':'#E8C13A'
 };
 
+// --- Google Sheet backup config ---
+// After deploying the Apps Script as a Web App, paste its URL below.
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycby-aFB7arQkQKg3_2A25-BMR_zLdFw0GgUmmU3n3RRLhil7ZJXLjVto0QTOu_z5da-K3w/exec';
+
 let entries = [];
 let activeCategory = null;
 let editingId = null;
+let syncTimer = null;
 
 function swatchColor(colorName){
   const key = (colorName||'').toLowerCase().trim();
@@ -377,6 +404,7 @@ async function loadEntries(){
     entries = [];
   }
   render();
+  checkSheetConnection();
 }
 
 async function saveEntries(){
@@ -384,6 +412,64 @@ async function saveEntries(){
     localStorage.setItem('lego-entries', JSON.stringify(entries));
   }catch(e){
     console.error('Storage error', e);
+  }
+  pushToSheet();
+}
+
+function sheetConfigured(){
+  return SHEET_API_URL && SHEET_API_URL.indexOf('http') === 0;
+}
+
+function setSyncStatus(text){
+  const el = document.getElementById('syncStatus');
+  if(el) el.textContent = 'Backup: ' + text;
+}
+
+async function checkSheetConnection(){
+  if(!sheetConfigured()){
+    setSyncStatus('not set up yet');
+    return;
+  }
+  setSyncStatus('connected');
+}
+
+async function pushToSheet(){
+  if(!sheetConfigured()) return;
+  setSyncStatus('saving...');
+  try{
+    await fetch(SHEET_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ entries })
+    });
+    const now = new Date();
+    setSyncStatus('last saved ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+  }catch(e){
+    setSyncStatus('couldn\'t reach backup (will retry next change)');
+  }
+}
+
+async function pullFromSheet(){
+  if(!sheetConfigured()){
+    alert('The Google Sheet backup isn\'t set up yet. Ask Claude to help you finish the setup first.');
+    return;
+  }
+  const ok = confirm('This will replace everything currently on this device with whatever is saved in the Google Sheet. Use this to recover lost data. Continue?');
+  if(!ok) return;
+  setSyncStatus('restoring...');
+  try{
+    const res = await fetch(SHEET_API_URL);
+    const rows = await res.json();
+    entries = rows.map(r => ({
+      ...r,
+      createdAt: Number(r.createdAt) || Date.now()
+    }));
+    localStorage.setItem('lego-entries', JSON.stringify(entries));
+    buildColorList();
+    render();
+    setSyncStatus('restored ' + entries.length + ' pieces from backup');
+  }catch(e){
+    setSyncStatus('restore failed, check your connection');
   }
 }
 
@@ -575,6 +661,8 @@ document.getElementById('clearFilters').addEventListener('click', () => {
 });
 
 buildCategoryChips();
+document.getElementById('restoreBtn').addEventListener('click', pullFromSheet);
+
 buildCategorySelect();
 loadEntries().then(buildColorList);
 
