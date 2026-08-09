@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brick Finder">
+<meta name="theme-color" content="#C23B32">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Brick Finder</title>
+<style>
+  :root{
+    --paper:#F6F1E7;
+    --card:#FFFFFF;
+    --ink:#24211B;
+    --ink-soft:#6B6558;
+    --line:#E4DCC9;
+    --line-strong:#D3C7A8;
+    --red:#C23B32;
+    --red-dark:#8F2A23;
+    --amber:#D98E2B;
+    --amber-bg:#FBF0DC;
+    --danger:#B4453D;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#1C1A15;
+      --card:#26231C;
+      --ink:#EDE7D9;
+      --ink-soft:#B0A990;
+      --line:#3A362A;
+      --line-strong:#4A4536;
+      --red:#E0564B;
+      --red-dark:#F08278;
+      --amber:#E8A94A;
+      --amber-bg:#332A16;
+      --danger:#E0736A;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.5;
+  }
+  html{-webkit-text-size-adjust:100%;}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px;}
+  header{margin-bottom:24px;}
+  .eyebrow{
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--red);
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  h1{
+    font-family: Georgia, "Times New Roman", serif;
+    font-size:32px;
+    margin:0 0 6px;
+    font-weight:700;
+  }
+  .sub{color:var(--ink-soft);font-size:15px;margin:0;}
+
+  .search-row{
+    display:flex;
+    gap:10px;
+    margin:22px 0 12px;
+  }
+  .search-box{
+    flex:1;
+    position:relative;
+  }
+  .search-box input{
+    width:100%;
+    font-size:17px;
+    padding:14px 16px 14px 44px;
+    border:1.5px solid var(--line-strong);
+    border-radius:10px;
+    background:var(--card);
+    color:var(--ink);
+    outline:none;
+  }
+  .search-box input:focus{border-color:var(--red);}
+  .search-icon{
+    position:absolute;
+    left:15px;top:50%;transform:translateY(-50%);
+    color:var(--ink-soft);
+    pointer-events:none;
+    font-size:16px;
+  }
+  .btn{
+    font-size:15px;
+    font-weight:600;
+    padding:0 20px;
+    border-radius:10px;
+    border:1.5px solid var(--line-strong);
+    background:var(--card);
+    color:var(--ink);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--red);}
+  .btn-primary{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
+  .btn-primary:hover{background:var(--red-dark);border-color:var(--red-dark);}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 22px;}
+  .chip{
+    font-size:12.5px;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:var(--card);
+    color:var(--ink-soft);
+    cursor:pointer;
+    user-select:none;
+  }
+  .chip.active{
+    background:var(--amber-bg);
+    border-color:var(--amber);
+    color:var(--ink);
+    font-weight:600;
+  }
+
+  .count-row{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:12px;font-size:13px;color:var(--ink-soft);
+  }
+
+  .results{display:flex;flex-direction:column;gap:10px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+  }
+  .swatch{
+    width:16px;height:16px;
+    border-radius:4px;
+    margin-top:5px;
+    flex-shrink:0;
+    border:1px solid rgba(0,0,0,0.15);
+  }
+  .card-body{flex:1;min-width:0;}
+  .card-top{
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;
+  }
+  .card-desc{font-size:15.5px;font-weight:600;margin:0;}
+  .drawer-code{
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size:13px;
+    font-weight:700;
+    color:var(--red);
+    background:var(--amber-bg);
+    padding:3px 9px;
+    border-radius:6px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .card-meta{
+    font-size:13px;color:var(--ink-soft);margin:4px 0 0;
+  }
+  .card-meta b{color:var(--ink);font-weight:600;}
+  .card-notes{font-size:13px;color:var(--ink-soft);margin:6px 0 0;font-style:italic;}
+  .card-actions{display:flex;gap:6px;margin-left:8px;flex-shrink:0;}
+  .icon-btn{
+    background:none;border:none;cursor:pointer;
+    color:var(--ink-soft);font-size:13px;padding:4px 8px;
+    border-radius:6px;
+  }
+  .icon-btn:hover{background:var(--line);color:var(--ink);}
+
+  .empty{
+    text-align:center;padding:50px 20px;color:var(--ink-soft);
+  }
+  .empty p:first-child{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:6px;}
+
+  .panel{
+    background:var(--card);
+    border:1.5px solid var(--line-strong);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:22px;
+  }
+  .panel h2{
+    font-family: Georgia, serif;
+    font-size:19px;margin:0 0 16px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);
+    margin-bottom:5px;text-transform:uppercase;letter-spacing:0.03em;
+  }
+  .field input, .field select, .field textarea{
+    width:100%;
+    font-size:15px;
+    padding:10px 12px;
+    border:1.5px solid var(--line-strong);
+    border-radius:8px;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:inherit;
+    outline:none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--red);}
+  .field textarea{resize:vertical;min-height:60px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .radio-group{display:flex;gap:16px;}
+  .radio-group label{
+    display:flex;align-items:center;gap:6px;
+    font-size:14px;font-weight:500;color:var(--ink);
+    text-transform:none;letter-spacing:0;cursor:pointer;
+  }
+  .radio-group input{width:auto;}
+  .panel-actions{display:flex;gap:10px;margin-top:16px;}
+
+  .hidden{display:none !important;}
+  .top-actions{display:flex;justify-content:flex-end;margin-bottom:6px;}
+
+  @media (max-width: 600px){
+    .wrap{padding:18px 14px 90px;}
+    h1{font-size:26px;}
+    .sub{font-size:14px;}
+    .search-row{flex-direction:column;}
+    .search-box input{font-size:16px;padding:13px 14px 13px 42px;}
+    .btn{padding:13px 16px;width:100%;}
+    .chip{padding:8px 13px;font-size:13px;}
+    .row2{grid-template-columns:1fr;gap:0;}
+    .card{padding:12px;gap:10px;}
+    .card-top{flex-direction:column;align-items:flex-start;gap:4px;}
+    .card-actions{flex-direction:column;gap:2px;margin-left:0;}
+    .icon-btn{padding:8px 10px;font-size:13px;}
+    .panel{padding:16px;}
+    .radio-group{gap:12px;flex-wrap:wrap;}
+    .panel-actions{flex-direction:column;}
+    .panel-actions .btn{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Gus's Lego HQ</p>
+    <h1>Brick Finder</h1>
+    <p class="sub">Describe the piece you're after and find out which drawer it's in.</p>
+  </header>
+
+  <div class="search-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="e.g. grey curved slope, red wheel, gold minifig helmet..." autocomplete="off">
+    </div>
+    <button class="btn btn-primary" id="addToggleBtn">+ Add piece</button>
+  </div>
+
+  <div class="chips" id="categoryChips"></div>
+
+  <div id="addPanel" class="panel hidden">
+    <h2 id="formTitle">Add a piece type</h2>
+    <div class="field">
+      <label for="f-category">Category</label>
+      <select id="f-category"></select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="f-color">Colour</label>
+        <input type="text" id="f-color" list="colorList" placeholder="e.g. dark red, trans clear, lego yellow">
+        <datalist id="colorList"></datalist>
+      </div>
+      <div class="field">
+        <label for="f-drawer">Drawer label</label>
+        <input type="text" id="f-drawer" placeholder="e.g. 4, B2, top-left">
+      </div>
+    </div>
+    <div class="field">
+      <label>Drawer size</label>
+      <div class="radio-group">
+        <label><input type="radio" name="drawerSize" value="little" checked> Little drawer</label>
+        <label><input type="radio" name="drawerSize" value="big"> Big drawer</label>
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-desc">What it looks like</label>
+      <textarea id="f-desc" placeholder="Describe it the way you'd say it out loud, e.g. flat curvy piece with one bump on top and no studs on the side"></textarea>
+    </div>
+    <div class="field">
+      <label for="f-notes">Notes (optional)</label>
+      <input type="text" id="f-notes" placeholder="anything else worth remembering">
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-primary" id="saveBtn">Save piece</button>
+      <button class="btn" id="cancelBtn">Cancel</button>
+    </div>
+  </div>
+
+  <div class="count-row">
+    <span id="countText">Loading...</span>
+    <span id="clearFilters" class="chip hidden" style="cursor:pointer;">Clear filters ✕</span>
+  </div>
+
+  <div class="results" id="results"></div>
+  <div class="empty hidden" id="emptyState">
+    <p>No pieces catalogued yet</p>
+    <p>Tap "+ Add piece" to log your first drawer.</p>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  {id:'bases-diagonal', label:'Bases & diagonal edges'},
+  {id:'standard-bricks', label:'Standard bricks'},
+  {id:'technic', label:'Technic bricks'},
+  {id:'minifigs', label:'Minifigs & accessories'},
+  {id:'wheels', label:'Wheels'},
+  {id:'shooters', label:'Shooters'},
+  {id:'stickered', label:'Parts with stickers'},
+  {id:'hinges', label:'Hinges'},
+  {id:'rods-bolts', label:'Rods & bolts'},
+  {id:'corners', label:'Corner parts'},
+  {id:'car-parts', label:'Car parts'},
+  {id:'curved-top', label:'Curved top pieces'},
+  {id:'flat-top', label:'Flat top pieces'},
+  {id:'few-dots', label:'Few dots on top'},
+  {id:'circles', label:'Circle pieces'},
+  {id:'dots-1x1', label:'Dots & 1x1s'},
+  {id:'two-by-one', label:'2x1s'},
+  {id:'grilles', label:'Grilles'},
+  {id:'pill', label:'Pill shaped pieces'},
+  {id:'special', label:"Special bricks"}
+];
+const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
+
+const COLOR_SWATCH = {
+  red:'#C23B32', 'dark red':'#7A1F1A', blue:'#1D5FB0', 'dark blue':'#173F73',
+  yellow:'#E8C13A', green:'#3E8E4A', 'dark green':'#2A5E33', white:'#F2F0E8',
+  black:'#26231F', grey:'#9A968C', gray:'#9A968C', 'dark grey':'#5A564C',
+  'light grey':'#C7C3B6', orange:'#E0812E', brown:'#6B4A34', tan:'#D8C49A',
+  pink:'#E5A0B8', purple:'#7E5AA8', gold:'#C7A44A', silver:'#B6B6B6',
+  'trans clear':'#DDEAF2', clear:'#DDEAF2', 'lego yellow':'#E8C13A'
+};
+
+let entries = [];
+let activeCategory = null;
+let editingId = null;
+
+function swatchColor(colorName){
+  const key = (colorName||'').toLowerCase().trim();
+  if(COLOR_SWATCH[key]) return COLOR_SWATCH[key];
+  for(const k in COLOR_SWATCH){ if(key.includes(k)) return COLOR_SWATCH[k]; }
+  return '#B0A990';
+}
+
+function drawerCode(entry){
+  const prefix = entry.drawerSize === 'big' ? 'BIG' : 'LIT';
+  return prefix + ' · ' + entry.drawer;
+}
+
+async function loadEntries(){
+  try{
+    const raw = localStorage.getItem('lego-entries');
+    entries = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    entries = [];
+  }
+  render();
+}
+
+async function saveEntries(){
+  try{
+    localStorage.setItem('lego-entries', JSON.stringify(entries));
+  }catch(e){
+    console.error('Storage error', e);
+  }
+}
+
+function buildCategoryChips(){
+  const wrap = document.getElementById('categoryChips');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (activeCategory === c.id ? ' active' : '');
+    chip.textContent = c.label;
+    chip.onclick = () => {
+      activeCategory = activeCategory === c.id ? null : c.id;
+      buildCategoryChips();
+      render();
+    };
+    wrap.appendChild(chip);
+  });
+}
+
+function buildCategorySelect(){
+  const sel = document.getElementById('f-category');
+  sel.innerHTML = CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+}
+
+function buildColorList(){
+  const dl = document.getElementById('colorList');
+  const colors = [...new Set(entries.map(e => e.color).filter(Boolean))];
+  dl.innerHTML = colors.map(c => `<option value="${c}">`).join('');
+}
+
+function score(entry, tokens){
+  const hay = [
+    CAT_MAP[entry.category] || '',
+    entry.color || '',
+    entry.description || '',
+    entry.notes || '',
+    entry.drawer || ''
+  ].join(' ').toLowerCase();
+  let s = 0;
+  tokens.forEach(t => {
+    if(!t) return;
+    if(hay.includes(t)) s += 1;
+  });
+  return s;
+}
+
+function render(){
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const tokens = query.split(/\s+/).filter(Boolean);
+
+  let list = entries.slice();
+  if(activeCategory) list = list.filter(e => e.category === activeCategory);
+
+  if(tokens.length){
+    list = list.map(e => ({e, s: score(e, tokens)}))
+               .filter(x => x.s > 0)
+               .sort((a,b) => b.s - a.s)
+               .map(x => x.e);
+  } else {
+    list = list.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  }
+
+  const resultsEl = document.getElementById('results');
+  const emptyEl = document.getElementById('emptyState');
+  const countEl = document.getElementById('countText');
+  const clearBtn = document.getElementById('clearFilters');
+
+  clearBtn.classList.toggle('hidden', !(query || activeCategory));
+
+  if(entries.length === 0){
+    resultsEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    countEl.textContent = '0 piece types catalogued';
+    return;
+  }
+  emptyEl.classList.add('hidden');
+
+  countEl.textContent = tokens.length || activeCategory
+    ? `${list.length} match${list.length===1?'':'es'}`
+    : `${entries.length} piece type${entries.length===1?'':'s'} catalogued`;
+
+  if(list.length === 0){
+    resultsEl.innerHTML = '<div class="empty"><p>No matches</p><p>Try different words, or check the drawer yourself and add it here.</p></div>';
+    return;
+  }
+
+  resultsEl.innerHTML = list.map(e => `
+    <div class="card">
+      <div class="swatch" style="background:${swatchColor(e.color)}"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <p class="card-desc">${escapeHtml(e.description)}</p>
+          <span class="drawer-code">${escapeHtml(drawerCode(e))}</span>
+        </div>
+        <p class="card-meta"><b>${escapeHtml(CAT_MAP[e.category] || e.category)}</b> · ${escapeHtml(e.color || 'no colour set')}</p>
+        ${e.notes ? `<p class="card-notes">${escapeHtml(e.notes)}</p>` : ''}
+      </div>
+      <div class="card-actions">
+        <button class="icon-btn" onclick="startEdit('${e.id}')">Edit</button>
+        <button class="icon-btn" onclick="deleteEntry('${e.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function openPanel(){
+  document.getElementById('addPanel').classList.remove('hidden');
+  document.getElementById('f-desc').focus();
+}
+function closePanel(){
+  document.getElementById('addPanel').classList.add('hidden');
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Add a piece type';
+  document.getElementById('f-category').selectedIndex = 0;
+  document.getElementById('f-color').value = '';
+  document.getElementById('f-drawer').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-notes').value = '';
+  document.querySelector('input[name="drawerSize"][value="little"]').checked = true;
+}
+
+window.startEdit = function(id){
+  const e = entries.find(x => x.id === id);
+  if(!e) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = 'Edit piece type';
+  document.getElementById('f-category').value = e.category;
+  document.getElementById('f-color').value = e.color || '';
+  document.getElementById('f-drawer').value = e.drawer || '';
+  document.getElementById('f-desc').value = e.description || '';
+  document.getElementById('f-notes').value = e.notes || '';
+  document.querySelector(`input[name="drawerSize"][value="${e.drawerSize}"]`).checked = true;
+  openPanel();
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+
+window.deleteEntry = async function(id){
+  entries = entries.filter(e => e.id !== id);
+  await saveEntries();
+  buildColorList();
+  render();
+};
+
+document.getElementById('addToggleBtn').onclick = () => {
+  const panel = document.getElementById('addPanel');
+  if(panel.classList.contains('hidden')){ openPanel(); } else { closePanel(); }
+};
+document.getElementById('cancelBtn').onclick = closePanel;
+
+document.getElementById('saveBtn').onclick = async () => {
+  const description = document.getElementById('f-desc').value.trim();
+  if(!description){
+    document.getElementById('f-desc').focus();
+    return;
+  }
+  const data = {
+    category: document.getElementById('f-category').value,
+    color: document.getElementById('f-color').value.trim(),
+    drawer: document.getElementById('f-drawer').value.trim(),
+    drawerSize: document.querySelector('input[name="drawerSize"]:checked').value,
+    description,
+    notes: document.getElementById('f-notes').value.trim()
+  };
+
+  if(editingId){
+    const idx = entries.findIndex(e => e.id === editingId);
+    if(idx > -1) entries[idx] = {...entries[idx], ...data};
+  } else {
+    entries.push({id: 'e' + Date.now() + Math.random().toString(36).slice(2,7), createdAt: Date.now(), ...data});
+  }
+  await saveEntries();
+  buildColorList();
+  closePanel();
+  render();
+};
+
+document.getElementById('searchInput').addEventListener('input', render);
+document.getElementById('clearFilters').addEventListener('click', () => {
+  document.getElementById('searchInput').value = '';
+  activeCategory = null;
+  buildCategoryChips();
+  render();
+});
+
+buildCategoryChips();
+buildCategorySelect();
+loadEntries().then(buildColorList);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
